@@ -150,6 +150,7 @@ namespace Game1
             labelCoins.Text = "Монеты: 0";
             coin.Top = -500;
 
+
         }
     }
 }
