@@ -46,17 +46,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\..\OneDrive\Рабочий стол\Form1.cs">
-      <SubType>Form</SubType>
+    <Compile Include="..\..\..\..\OneDrive\Рабочий стол\игра\Form1.cs">
       <Link>Form1.cs</Link>
+      <SubType>Form</SubType>
     </Compile>
-    <Compile Include="..\..\..\..\OneDrive\Рабочий стол\Form1.Designer.cs">
+    <Compile Include="..\..\..\..\OneDrive\Рабочий стол\игра\Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
       <Link>Form1.Designer.cs</Link>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="..\..\..\..\OneDrive\Рабочий стол\Form1.resx">
+    <EmbeddedResource Include="..\..\..\..\OneDrive\Рабочий стол\игра\Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
       <Link>Form1.resx</Link>
     </EmbeddedResource>
