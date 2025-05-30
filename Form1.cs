@@ -1,28 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+using System;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace Game1
 {
     public partial class Form1 : Form
     {
-        private Point pos;
-        private bool draggin, lose = false;
-        private int countCoins = 0;
+        // Состояния игры
+        private bool _isDragging;
+        private bool _isGameOver;
+        private int _coinsCollected;
+        private Point _dragStartPosition;
 
-
+        // Это настройки игры, здесь я числа заменила на константы
+        private const int BackgroundSpeed = 10;
+        private const int CarSpeed = 7;
+        private const int PlayerSpeed = 10;
+        private readonly Random _random = new Random();
 
         public Form1()
         {
             InitializeComponent();
+            InitializeGame();
+        }
 
+
+        private void InitializeGame()
+        {
             bg1.MouseDown += MouseClickDown;
             bg1.MouseUp += MouseClickUp;
             bg1.MouseMove += MouseClickMove;
@@ -31,126 +35,161 @@ namespace Game1
             bg2.MouseUp += MouseClickUp;
             bg2.MouseMove += MouseClickMove;
 
-            labelLose.Visible = false;
-            btnRestart.Visible = false;
+           
+
+            ResetGameState();
             KeyPreview = true;
         }
 
+        private void ResetGameState()
+        {
+            _isGameOver = false;
+            _coinsCollected = 0;
 
+            // сброс элементов интерфейса при перезапуске
+            labelLose.Visible = false;
+            btnRestart.Visible = false;
+            labelCoins.Text = "Монеты: 0";
 
+            // вражеские машинки и монетки возвращаюся на первоначальное место(за экраном)
+            enemy1.Top = -130;
+            enemy1.Left = _random.Next(150, 300);
+
+            enemy2.Top = -400;
+            enemy2.Left = _random.Next(300, 500);
+
+            coin.Top = -500;
+            coin.Left = _random.Next(150, 500);
+
+           
+            timer.Start(); // заменила Enabled = true на Start(), для лучшей читаемости
+        }
+
+        // добавила регионы для логического разделения кода
+        #region Mouse Drag Handling
         private void MouseClickDown(object sender, MouseEventArgs e)
-        {  
-            draggin = true;
-            pos.X = e.X;
-            pos.Y = e.Y;
-
+        {
+            _isDragging = true;
+            _dragStartPosition = e.Location;
         }
 
         private void MouseClickUp(object sender, MouseEventArgs e)
         {
-            draggin = false;
+            _isDragging = false;
         }
 
         private void MouseClickMove(object sender, MouseEventArgs e)
         {
-            if (draggin)
+            if (_isDragging)
             {
-                Point currPoint = PointToScreen(new Point(e.X, e.Y));
-                this.Location = new Point(currPoint.X - pos.X, currPoint.Y - pos.Y + bg1.Top);
+                var currentPoint = PointToScreen(e.Location);
+                Location = new Point(
+                    currentPoint.X - _dragStartPosition.X,
+                    currentPoint.Y - _dragStartPosition.Y + bg1.Top);
             }
         }
+        #endregion
 
+        #region Keyboard Handling
         private void Form1_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == (char)Keys.Escape)
-                this.Close();
-
+                Close();
         }
 
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (_isGameOver) return;
+
+            if ((e.KeyCode == Keys.Left || e.KeyCode == Keys.A) && player.Left > 150)
+                player.Left -= PlayerSpeed;
+            else if ((e.KeyCode == Keys.Right || e.KeyCode == Keys.D) && player.Right < 600)
+                player.Left += PlayerSpeed;
+        }
+        #endregion
+
+        #region Game Logic
         private void timer_Tick(object sender, EventArgs e)
         {
-            int speed = 10;
-            bg1.Top += speed;
-            bg2.Top += speed;
+            if (_isGameOver) return;
 
-            int carSpeed = 7;
-            enemy1.Top += carSpeed;
-            enemy2.Top += carSpeed;
+            MoveBackground();
+            MoveGameObjects();
+            CheckCollisions();
+        }
 
-            coin.Top += speed;
-
+        private void MoveBackground()
+        {
+            bg1.Top += BackgroundSpeed;
+            bg2.Top += BackgroundSpeed;
 
             if (bg1.Top >= 500)
             {
                 bg1.Top = 0;
                 bg2.Top = -500;
             }
+        }
 
-            if (coin.Top >= 650)
-            {
-                coin.Top = -50;
-                Random rand = new Random();
-                coin.Left = rand.Next(150, 500);
-            }
+        private void MoveGameObjects()
+        {
+            // движение вражеских машинок
+            enemy1.Top += CarSpeed;
+            enemy2.Top += CarSpeed;
 
-            if (enemy1.Top >= 650)
-            {
-                enemy1.Top = -130;
-                Random rand = new Random();
-                enemy1.Left = rand.Next(150, 300);
-            }
+            // движение монетки
+            coin.Top += BackgroundSpeed;
 
-            if (enemy2.Top >= 650)
-            {
-                enemy2.Top = -400;
-                Random rand = new Random();
-                enemy2.Left = rand.Next(300, 500);
-            }
-            
+            // сбрасывание позиции, когла элемент выходи за экран
+            if (enemy1.Top >= 650) ResetEnemy(enemy1, minX: 150, maxX: 300, y: -130);
+            if (enemy2.Top >= 650) ResetEnemy(enemy2, minX: 300, maxX: 500, y: -400);
+            if (coin.Top >= 650) ResetCoin();
+        }
 
-            if (player.Bounds.IntersectsWith(enemy1.Bounds) 
-                || player.Bounds.IntersectsWith(enemy2.Bounds))
+        private void ResetEnemy(PictureBox enemy, int minX, int maxX, int y)
+        {
+            enemy.Top = y;
+            enemy.Left = _random.Next(minX, maxX);
+        }
+
+        private void ResetCoin()
+        {
+            coin.Top = -50;
+            coin.Left = _random.Next(150, 500);
+        }
+
+        private void CheckCollisions()
+        {
+            if (player.Bounds.IntersectsWith(enemy1.Bounds) ||
+                player.Bounds.IntersectsWith(enemy2.Bounds))
             {
-                timer.Enabled = false;
-                labelLose.Visible = true;
-                btnRestart.Visible = true;
-                lose = true;
+                GameOver();
             }
 
             if (player.Bounds.IntersectsWith(coin.Bounds))
             {
-                countCoins += 1;
-                labelCoins.Text = "Монеты: " + countCoins.ToString();
-                coin.Top = -50;
-                Random rand = new Random();
-                coin.Left = rand.Next(150, 500);
-
+                CollectCoin();
             }
         }
 
-        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        private void GameOver()
         {
-            int speed = 10;
-            if ((e.KeyCode == Keys.Left || e.KeyCode == Keys.A) && (player.Left > 150)) 
-                player.Left -= speed;
-            else if ((e.KeyCode == Keys.Right || e.KeyCode == Keys.D) && (player.Right < 600))
-                player.Left += speed;
-
+            _isGameOver = true;
+            timer.Stop(); // замениал Enabled = false на Stop, для более удобной читаемости
+            labelLose.Visible = true;
+            btnRestart.Visible = true;
         }
+
+        private void CollectCoin()
+        {
+            _coinsCollected++;
+            labelCoins.Text = $"Монеты: {_coinsCollected}"; // тут теперь f-сторка стала
+            ResetCoin();
+        }
+        #endregion
 
         private void btnRestart_Click(object sender, EventArgs e)
         {
-            enemy1.Top = -130;
-            enemy2.Top = -400;
-            labelLose.Visible = false;
-            btnRestart.Visible = false;
-            timer.Enabled = true;
-            lose = false;
-            countCoins = 0;
-            labelCoins.Text = "Монеты: 0";
-            coin.Top = -500;
-
-
+            ResetGameState();
         }
     }
 }
