@@ -139,7 +139,7 @@ namespace Game1
             // движение монетки
             coin.Top += BackgroundSpeed;
 
-            // сбрасывание позиции, когла элемент выходи за экран
+            // сбрасывание позиции, когла элемент выходит за экран
             if (enemy1.Top >= 650) ResetEnemy(enemy1, minX: 150, maxX: 300, y: -130);
             if (enemy2.Top >= 650) ResetEnemy(enemy2, minX: 300, maxX: 500, y: -400);
             if (coin.Top >= 650) ResetCoin();
@@ -174,7 +174,7 @@ namespace Game1
         private void GameOver()
         {
             _isGameOver = true;
-            timer.Stop(); // замениал Enabled = false на Stop, для более удобной читаемости
+            timer.Stop(); // заменила Enabled = false на Stop, для более удобной читаемости
             labelLose.Visible = true;
             btnRestart.Visible = true;
         }
